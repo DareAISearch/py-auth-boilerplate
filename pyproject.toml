@@ -1,0 +1,59 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "py-auth-boilerplate"
+version = "0.1.0"
+description = "Reusable JWT auth: inbound JWKS-verified bearer tokens for FastAPI, outbound audience-keyed M2M token issuance, with pluggable caching and single-flight stampede protection."
+readme = "README.md"
+license = "ISC"
+license-files = ["LICENSE"]
+authors = [{ name = "Nishant Kumar", email = "nishant.kumar@dareaisearch.com" }]
+requires-python = ">=3.11"
+dependencies = [
+    "pyjwt[crypto]>=2.15.0",
+    "redis>=8.1.0",
+    "pydantic>=2.13.5",
+    "httpx2>=2.13.1",
+    "fastapi>=0.141.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/DareAISearch/py-auth-boilerplate"
+Repository = "https://github.com/DareAISearch/py-auth-boilerplate"
+Issues = "https://github.com/DareAISearch/py-auth-boilerplate/issues"
+
+[project.optional-dependencies]
+dev = [
+    "uvicorn[standard]>=0.54.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.16.9",
+    "mypy>=2.3.1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/py_auth_boilerplate"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+# B008: FastAPI's `= Depends(...)` default-argument pattern is the documented idiom, not a bug.
+ignore = ["B008"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["py_auth_boilerplate"]
+mypy_path = "src"
