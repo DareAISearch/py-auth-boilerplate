@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "py-auth-boilerplate"
-version = "0.1.0"
+version = "0.1.1"
 description = "Reusable JWT auth: inbound JWKS-verified bearer tokens for FastAPI, outbound audience-keyed M2M token issuance, with pluggable caching and single-flight stampede protection."
 readme = "README.md"
 license = "ISC"
