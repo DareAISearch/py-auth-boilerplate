@@ -32,11 +32,24 @@ def _parse_max_age_seconds(cache_control: str | None) -> int | None:
 
 
 class _JwtVerifierConfigLike(Protocol):
-    jwks_url: str
-    service_name: str
-    jwks_cache_ttl_seconds: int
-    token_cache_max_ttl_seconds: int
-    clock_tolerance_seconds: int
+    """Structural shape of the config `create_jwt_verifier` needs.
+
+    Declared as read-only properties (rather than plain attributes) so that both mutable
+    config objects and frozen dataclasses like `AuthConfig` satisfy it -- a plain attribute
+    in a Protocol requires the implementation's attribute to be settable, which a frozen
+    dataclass's fields are not.
+    """
+
+    @property
+    def jwks_url(self) -> str: ...
+    @property
+    def service_name(self) -> str: ...
+    @property
+    def jwks_cache_ttl_seconds(self) -> int: ...
+    @property
+    def token_cache_max_ttl_seconds(self) -> int: ...
+    @property
+    def clock_tolerance_seconds(self) -> int: ...
 
 
 @dataclass

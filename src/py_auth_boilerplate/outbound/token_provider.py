@@ -14,12 +14,26 @@ from ..lock.single_flight import with_single_flight
 
 
 class _TokenProviderConfigLike(Protocol):
-    iam_service_url: str
-    service_name: str
-    client_id: str | None
-    client_secret: str | None
-    outbound_token_max_ttl_seconds: int
-    outbound_token_safety_margin_seconds: int
+    """Structural shape of the config `create_token_provider` needs.
+
+    Declared as read-only properties (rather than plain attributes) so that both mutable
+    config objects and frozen dataclasses like `AuthConfig` satisfy it -- a plain attribute
+    in a Protocol requires the implementation's attribute to be settable, which a frozen
+    dataclass's fields are not.
+    """
+
+    @property
+    def iam_service_url(self) -> str: ...
+    @property
+    def service_name(self) -> str: ...
+    @property
+    def client_id(self) -> str | None: ...
+    @property
+    def client_secret(self) -> str | None: ...
+    @property
+    def outbound_token_max_ttl_seconds(self) -> int: ...
+    @property
+    def outbound_token_safety_margin_seconds(self) -> int: ...
 
 
 @dataclass
