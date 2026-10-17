@@ -55,5 +55,5 @@ ignore = ["B008"]
 [tool.mypy]
 python_version = "3.14"
 strict = true
-packages = ["py_auth_boilerplate"]
+packages = ["py_auth_boilerplate", "tests"]
 mypy_path = "src"

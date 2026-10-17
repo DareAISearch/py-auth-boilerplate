@@ -64,7 +64,7 @@ class TestWaitForResult:
         assert calls == 3
 
     async def test_returns_none_after_exhausting_all_attempts(self) -> None:
-        async def check() -> None:
+        async def check() -> str | None:
             return None
 
         result = await wait_for_result(check, attempts=3, interval_ms=1)

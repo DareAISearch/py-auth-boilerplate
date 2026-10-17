@@ -9,7 +9,7 @@ import pytest
 
 from py_auth_boilerplate.cache.memory_cache import InMemoryCache
 from py_auth_boilerplate.errors import AuthConfigError, UpstreamError
-from py_auth_boilerplate.outbound.token_provider import create_token_provider
+from py_auth_boilerplate.outbound.token_provider import TokenProvider, create_token_provider
 
 
 @dataclass
@@ -59,8 +59,8 @@ class TestCreateTokenProvider:
         self._next_status = status
         self._next_response_body = body
 
-    def _make_provider(self, config: _Config = _CONFIG):
-        async def fetch_impl(url: str, options: dict | None = None) -> httpx.Response:
+    def _make_provider(self, config: _Config = _CONFIG) -> TokenProvider:
+        async def fetch_impl(url: str, options: dict[str, Any] | None = None) -> httpx.Response:
             self.mint_call_count += 1
             options = options or {}
             self.captured_requests.append(
@@ -220,7 +220,7 @@ class TestCreateTokenProvider:
         assert self.mint_call_count == before + 2
 
     async def test_raises_a_clear_upstream_error_when_the_iam_response_body_is_not_valid_json(self) -> None:
-        async def fetch_impl(url: str, options: dict | None = None) -> httpx.Response:
+        async def fetch_impl(url: str, options: dict[str, Any] | None = None) -> httpx.Response:
             return httpx.Response(200, content=b"not-json{{")
 
         provider = create_token_provider(config=_CONFIG, cache=self.cache, fetch_impl=fetch_impl)
@@ -240,8 +240,8 @@ class TestMissingOutboundCredentials:
     def _config_without_credentials(self) -> _Config:
         return replace(_CONFIG, client_id=None, client_secret=None)
 
-    def _provider_without_credentials(self):
-        async def fetch_impl(url: str, options: dict | None = None) -> httpx.Response:
+    def _provider_without_credentials(self) -> TokenProvider:
+        async def fetch_impl(url: str, options: dict[str, Any] | None = None) -> httpx.Response:
             raise AssertionError("fetch_impl should never be called when outbound credentials are missing")
 
         return create_token_provider(

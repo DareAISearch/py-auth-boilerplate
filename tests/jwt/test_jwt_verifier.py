@@ -2,6 +2,7 @@ import asyncio
 import json
 import time
 from dataclasses import dataclass, replace
+from typing import Any
 
 import httpx2 as httpx
 import jwt as pyjwt
@@ -10,7 +11,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 from py_auth_boilerplate.cache.memory_cache import InMemoryCache
 from py_auth_boilerplate.errors import AuthError, JwksUnavailableError
-from py_auth_boilerplate.jwt.jwt_verifier import create_jwt_verifier
+from py_auth_boilerplate.jwt.jwt_verifier import JwtVerifier, create_jwt_verifier
 
 from ..fixtures.keys import generate_test_key_pair, sign_test_token
 
@@ -27,7 +28,7 @@ class _Config:
     clock_tolerance_seconds: int
 
 
-def _base_config(**overrides: object) -> _Config:
+def _base_config(**overrides: Any) -> _Config:
     config = _Config(
         jwks_url=_JWKS_URL,
         service_name=_AUDIENCE,
@@ -38,7 +39,7 @@ def _base_config(**overrides: object) -> _Config:
     return replace(config, **overrides) if overrides else config
 
 
-def _jwks_response(*jwks: dict, cache_control: str | None = None) -> httpx.Response:
+def _jwks_response(*jwks: dict[str, Any], cache_control: str | None = None) -> httpx.Response:
     headers = {"content-type": "application/json"}
     if cache_control is not None:
         headers["cache-control"] = cache_control
@@ -52,8 +53,10 @@ class TestCreateJwtVerifier:
         self.key_pair_a = generate_test_key_pair("kid-a")
         self.key_pair_b = generate_test_key_pair("kid-b")
 
-    def _make_verifier(self, *, clock_tolerance_seconds: int = 0, jwks_cache_ttl_seconds: int = 604_800):
-        async def fetch_impl(url: str, options: dict | None = None) -> httpx.Response:
+    def _make_verifier(
+        self, *, clock_tolerance_seconds: int = 0, jwks_cache_ttl_seconds: int = 604_800
+    ) -> JwtVerifier:
+        async def fetch_impl(url: str, options: dict[str, Any] | None = None) -> httpx.Response:
             self.fetch_count += 1
             if url != _JWKS_URL:
                 return httpx.Response(404, content=b"not found")
@@ -155,7 +158,7 @@ class TestCreateJwtVerifier:
     ) -> None:
         other_audience = "other-service"
 
-        async def fetch_impl(url: str, options: dict | None = None) -> httpx.Response:
+        async def fetch_impl(url: str, options: dict[str, Any] | None = None) -> httpx.Response:
             return _jwks_response(self.key_pair_a.jwk)
 
         verifier_a = create_jwt_verifier(
@@ -200,7 +203,7 @@ class TestCreateJwtVerifier:
     ) -> None:
         # A key rotated in mid-window is rejected until the cached document's own TTL lapses --
         # deliberate: an unknown kid is never retried against a fresh fetch.
-        async def fetch_impl(url: str, options: dict | None = None) -> httpx.Response:
+        async def fetch_impl(url: str, options: dict[str, Any] | None = None) -> httpx.Response:
             self.fetch_count += 1
             return _jwks_response(self.key_pair_a.jwk)
 
@@ -218,7 +221,7 @@ class TestCreateJwtVerifier:
     async def test_raises_a_clear_jwks_unavailable_error_when_the_jwks_response_is_missing_a_keys_array(
         self,
     ) -> None:
-        async def fetch_impl(url: str, options: dict | None = None) -> httpx.Response:
+        async def fetch_impl(url: str, options: dict[str, Any] | None = None) -> httpx.Response:
             return httpx.Response(200, content=b"{}", headers={"content-type": "application/json"})
 
         verifier = create_jwt_verifier(config=_base_config(), cache=InMemoryCache(), fetch_impl=fetch_impl)
@@ -230,7 +233,7 @@ class TestCreateJwtVerifier:
     async def test_raises_a_jwks_unavailable_error_not_an_auth_error_when_jwks_endpoint_returns_non_2xx(
         self,
     ) -> None:
-        async def fetch_impl(url: str, options: dict | None = None) -> httpx.Response:
+        async def fetch_impl(url: str, options: dict[str, Any] | None = None) -> httpx.Response:
             return httpx.Response(503, content=b"service unavailable")
 
         verifier = create_jwt_verifier(config=_base_config(), cache=InMemoryCache(), fetch_impl=fetch_impl)
@@ -248,7 +251,7 @@ class TestCreateJwtVerifier:
         # genuine suspension point asyncio.gather can run one task to completion before the other
         # starts, which would make both verify() calls "win" an already-free lock instead of
         # exercising the winner/loser path this test targets.
-        async def fetch_impl(url: str, options: dict | None = None) -> httpx.Response:
+        async def fetch_impl(url: str, options: dict[str, Any] | None = None) -> httpx.Response:
             self.fetch_count += 1
             await asyncio.sleep(0.05)
             return _jwks_response(self.key_pair_a.jwk, self.key_pair_b.jwk)
@@ -268,7 +271,7 @@ class TestCreateJwtVerifier:
         assert elapsed < 5.0
 
     async def test_uses_cache_control_max_age_as_the_jwks_cache_ttl_refetching_once_it_lapses(self) -> None:
-        async def fetch_impl(url: str, options: dict | None = None) -> httpx.Response:
+        async def fetch_impl(url: str, options: dict[str, Any] | None = None) -> httpx.Response:
             self.fetch_count += 1
             return _jwks_response(self.key_pair_a.jwk, cache_control="public, max-age=1")
 
@@ -285,7 +288,7 @@ class TestCreateJwtVerifier:
         assert self.fetch_count == 2
 
     async def test_falls_back_to_jwks_cache_ttl_seconds_when_no_cache_control_header(self) -> None:
-        async def fetch_impl(url: str, options: dict | None = None) -> httpx.Response:
+        async def fetch_impl(url: str, options: dict[str, Any] | None = None) -> httpx.Response:
             self.fetch_count += 1
             return _jwks_response(self.key_pair_a.jwk)
 
@@ -304,7 +307,7 @@ class TestCreateJwtVerifier:
         assert self.fetch_count == 2
 
     async def test_falls_back_to_jwks_cache_ttl_seconds_when_max_age_has_trailing_garbage(self) -> None:
-        async def fetch_impl(url: str, options: dict | None = None) -> httpx.Response:
+        async def fetch_impl(url: str, options: dict[str, Any] | None = None) -> httpx.Response:
             self.fetch_count += 1
             return _jwks_response(self.key_pair_a.jwk, cache_control="public, max-age=604800abc")
 
@@ -325,7 +328,7 @@ class TestCreateJwtVerifier:
     async def test_raises_a_clear_jwks_unavailable_error_when_the_jwks_response_body_is_not_valid_json(
         self,
     ) -> None:
-        async def fetch_impl(url: str, options: dict | None = None) -> httpx.Response:
+        async def fetch_impl(url: str, options: dict[str, Any] | None = None) -> httpx.Response:
             return httpx.Response(200, content=b"not-json{{", headers={"content-type": "application/json"})
 
         verifier = create_jwt_verifier(config=_base_config(), cache=InMemoryCache(), fetch_impl=fetch_impl)

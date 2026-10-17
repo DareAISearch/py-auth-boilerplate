@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass
+from typing import Any
 
 import httpx2 as httpx
 from fastapi import Depends, FastAPI, Request
@@ -39,7 +40,7 @@ class TestCreateAuthPlugin:
 
         self.cache.get = patched_get  # type: ignore[method-assign]
 
-        async def fetch_impl(url: str, options: dict | None = None) -> httpx.Response:
+        async def fetch_impl(url: str, options: dict[str, Any] | None = None) -> httpx.Response:
             if url != _JWKS_URL:
                 return httpx.Response(404, content=b"not found")
             return httpx.Response(200, content=json.dumps({"keys": [self.key_pair.jwk]}).encode())
@@ -60,7 +61,9 @@ class TestCreateAuthPlugin:
         )
 
         @app.post("/protected")
-        async def protected(request: Request, identity: dict = Depends(plugin.require_auth)) -> dict:
+        async def protected(
+            request: Request, identity: dict[str, Any] = Depends(plugin.require_auth)
+        ) -> dict[str, Any]:
             body = await request.json()
             assert_claim_matches(identity, "webhook_url", body.get("webhook_url", UNSET))
             return {"sub": identity.get("sub")}
