@@ -7,8 +7,12 @@ from redis.asyncio import Redis
 from .types import CacheSetManyEntry
 
 
-def _to_redis_ttl_seconds(ttl_seconds: float) -> int:
-    return max(1, math.ceil(ttl_seconds))
+def _to_redis_ttl_ms(ttl_seconds: float) -> int:
+    """Whole milliseconds for Redis's PX, rounded up so a short TTL never becomes 0 (which Redis
+    rejects). Millisecond precision keeps sub-second TTLs honest; EX would stretch 0.05s to 1s.
+    round() first strips float noise, e.g. 4.2 * 1000 == 4200.000000000001, which must not become 4201.
+    """
+    return max(1, math.ceil(round(ttl_seconds * 1000, 3)))
 
 
 # Compare-and-delete: only removes the lock if it still holds our token, so a lock that already
@@ -40,7 +44,7 @@ class RedisCache:
     async def set(self, key: str, value: str, ttl_seconds: float) -> None:
         if ttl_seconds <= 0:
             raise ValueError(f"ttl_seconds must be positive, got {ttl_seconds}")
-        await self._redis.set(key, value, ex=_to_redis_ttl_seconds(ttl_seconds))
+        await self._redis.set(key, value, px=_to_redis_ttl_ms(ttl_seconds))
 
     async def set_many(self, entries: list[CacheSetManyEntry]) -> None:
         if not entries:
@@ -53,7 +57,7 @@ class RedisCache:
 
         pipeline = self._redis.pipeline()
         for entry in entries:
-            pipeline.set(entry.key, entry.value, ex=_to_redis_ttl_seconds(entry.ttl_seconds))
+            pipeline.set(entry.key, entry.value, px=_to_redis_ttl_ms(entry.ttl_seconds))
         # raise_on_error=False so a partial failure (one bad SET) is inspected as a result list
         # instead of silently looking like a complete success.
         results = await pipeline.execute(raise_on_error=False)
