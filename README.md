@@ -27,17 +27,17 @@ across every replica of a service — or you can supply your own cache implement
 
 ## Installing
 
-Not on PyPI yet — install straight from this GitHub repo. Requires Python 3.11+.
+Not on PyPI yet — install straight from this GitHub repo. Requires Python 3.14+.
 
 ```bash
-pip install "py-auth-boilerplate @ git+https://github.com/DareAISearch/py-auth-boilerplate.git@v0.1.0"
+pip install "py-auth-boilerplate @ git+https://github.com/DareAISearch/py-auth-boilerplate.git@v0.1.3"
 ```
 
 or in `pyproject.toml`:
 
 ```toml
 dependencies = [
-    "py-auth-boilerplate @ git+https://github.com/DareAISearch/py-auth-boilerplate.git@v0.1.0",
+    "py-auth-boilerplate @ git+https://github.com/DareAISearch/py-auth-boilerplate.git@v0.1.3",
 ]
 ```
 

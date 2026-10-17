@@ -173,9 +173,8 @@ def create_token_provider(
 
     async def get_token(aud: str, custom_claims: dict[str, Any] | None = None) -> str:
         outbound = require_outbound_config()
-        fingerprint = hashlib.sha256(
-            f"{config.iam_service_url}|{outbound.client_id}".encode()
-        ).hexdigest()[:16]
+        trust = f"{config.iam_service_url}|{outbound.client_id}"
+        fingerprint = hashlib.sha256(trust.encode()).hexdigest()[:16]
 
         key = cache_key(fingerprint, aud, custom_claims)
         cached = await cache.get(key)

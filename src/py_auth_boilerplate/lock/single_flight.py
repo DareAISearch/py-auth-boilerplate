@@ -2,13 +2,10 @@ import asyncio
 import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import TypeVar
 
 from ..cache.types import Cache
 
 _logger = logging.getLogger(__name__)
-
-T = TypeVar("T")
 
 # Must comfortably exceed http_client's DEFAULT_TIMEOUT_SECONDS (10s), or the lock could expire
 # mid-flight and a waiter re-acquire it while the original holder is still working.
@@ -39,7 +36,7 @@ async def _release_lock_best_effort(cache: Cache, lock_key: str, token: str) -> 
         _logger.warning('failed to release single-flight lock "%s": %s', lock_key, exc)
 
 
-async def wait_for_result(
+async def wait_for_result[T](
     check: Callable[[], Awaitable[T | None]],
     attempts: int = _WAIT_ATTEMPTS,
     interval_ms: float = _WAIT_INTERVAL_MS,
@@ -59,7 +56,7 @@ class SingleFlightOptions:
     wait_interval_ms: float | None = None
 
 
-async def with_single_flight(
+async def with_single_flight[T](
     cache: Cache,
     lock_key: str,
     do_work: Callable[[], Awaitable[T]],
@@ -72,7 +69,7 @@ async def with_single_flight(
     if lock_token is not None:
         try:
             result = await do_work()
-        except (Exception, asyncio.CancelledError):
+        except Exception, asyncio.CancelledError:
             # CancelledError is a BaseException, not Exception -- caught explicitly, or cleanup
             # gets skipped.
             try:

@@ -26,7 +26,7 @@ class RedisCache:
         self._redis = redis
 
     @classmethod
-    def from_url(cls, url: str, **kwargs: Any) -> "RedisCache":
+    def from_url(cls, url: str, **kwargs: Any) -> RedisCache:
         kwargs.setdefault("decode_responses", True)
         return cls(Redis.from_url(url, **kwargs))
 

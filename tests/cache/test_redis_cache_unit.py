@@ -13,7 +13,7 @@ class _FakePipeline:
         self._exec_results = exec_results
         self.queued: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
 
-    def set(self, *args: Any, **kwargs: Any) -> "_FakePipeline":
+    def set(self, *args: Any, **kwargs: Any) -> _FakePipeline:
         self.queued.append((args, kwargs))
         return self
 
@@ -57,7 +57,6 @@ class TestRedisCacheSpecificBehavior:
         fake.get_returns = "cached-value"
         cache = RedisCache(fake)  # type: ignore[arg-type]
         assert await cache.get("k") == "cached-value"
-
 
     async def test_set_rejects_a_non_positive_ttl_without_ever_calling_the_underlying_client(self) -> None:
         fake = FakeRedis()

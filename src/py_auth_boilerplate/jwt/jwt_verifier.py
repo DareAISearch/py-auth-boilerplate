@@ -108,9 +108,7 @@ def create_jwt_verifier(
             value = await cache.get(jwks_document_cache_key())
             return json.loads(value) if value is not None else None
 
-        return await with_single_flight(
-            cache, jwks_refresh_lock_key(), fetch_and_cache_jwks, poll_for_cached
-        )
+        return await with_single_flight(cache, jwks_refresh_lock_key(), fetch_and_cache_jwks, poll_for_cached)
 
     async def verify(token: str) -> dict[str, Any]:
         cache_key = token_cache_key(token)
